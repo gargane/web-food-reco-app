@@ -1,58 +1,70 @@
-import { LayoutDashboard, Store, Users, LogOut } from "lucide-react";
+import { X, LayoutDashboard, Store, Settings, LogOut } from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
-import { useNavigate } from "react-router-dom";
+interface SidebarProps {
+  onClose?: () => void;
+}
 
-export function Sidebar() {
-  const { user, logout } = useAuth();
-  const navigate = useNavigate();
-
-  const handleLogout = () => {
-    logout();
-    navigate("/");
-  };
+// 2. Aplique a interface no componente
+export function Sidebar({ onClose }: SidebarProps) {
+  const location = useLocation();
+  const { logout } = useAuth();
+  const menuItems = [
+    {
+      icon: <LayoutDashboard size={20} />,
+      label: "Dashboard",
+      path: "/admin/dashboard",
+    },
+    { icon: <Store size={20} />, label: "Lojas", path: "/admin/lojas" },
+    {
+      icon: <Settings size={20} />,
+      label: "Configurações",
+      path: "/admin/config",
+    },
+  ];
 
   return (
-    <aside className="w-64 bg-slate-900 h-screen flex flex-col p-6 text-white border-r border-slate-800">
-      <div className="mb-10">
-        <h2 className="text-2xl font-black tracking-tighter">
+    <aside className="w-64 h-full bg-slate-900 text-slate-300 flex flex-col shadow-2xl">
+      {/* Header da Sidebar com botão fechar (visível apenas no mobile) */}
+      <div className="p-6 flex items-center justify-between border-b border-slate-800">
+        <h2 className="text-xl font-black text-white italic tracking-tighter">
           InkFlow<span className="text-indigo-500">.</span>
         </h2>
-        <span className="text-[10px] bg-indigo-600/20 text-indigo-400 px-2 py-0.5 rounded-full font-bold uppercase">
-          {user?.role}
-        </span>
+        <button
+          onClick={onClose}
+          className="lg:hidden p-2 hover:bg-slate-800 rounded-lg text-slate-400"
+        >
+          <X size={20} />
+        </button>
       </div>
 
-      <nav className="flex-1 space-y-2">
-        <button
-          onClick={() => navigate("/admin/dashboard")}
-          className="w-full flex items-center gap-3 p-3 bg-indigo-600 rounded-xl font-bold transition-all"
-        >
-          <LayoutDashboard size={20} /> Dashboard
-        </button>
-        <button className="w-full flex items-center gap-3 p-3 text-slate-400 hover:bg-slate-800 rounded-xl transition-all">
-          <Store size={20} /> Lojas (Tenants)
-        </button>
-        <button className="w-full flex items-center gap-3 p-3 text-slate-400 hover:bg-slate-800 rounded-xl transition-all">
-          <Users size={20} /> Usuários Master
-        </button>
+      {/* Navegação */}
+      <nav className="flex-1 p-4 space-y-2">
+        {menuItems.map((item) => (
+          <Link
+            key={item.path}
+            to={item.path}
+            onClick={onClose} // Fecha a sidebar ao clicar em um link no mobile
+            className={`flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all ${
+              location.pathname === item.path
+                ? "bg-indigo-600 text-white shadow-lg shadow-indigo-900/20"
+                : "hover:bg-slate-800 hover:text-white"
+            }`}
+          >
+            {item.icon}
+            {item.label}
+          </Link>
+        ))}
       </nav>
 
-      <div className="mt-auto pt-6 border-t border-slate-800">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 rounded-full bg-indigo-500 flex items-center justify-center font-bold text-lg">
-            {user?.email ? user.email[0].toUpperCase() : "?"}
-          </div>
-          <div className="truncate">
-            <p className="text-sm font-bold truncate">{user?.email}</p>
-            <p className="text-[10px] text-slate-500">Online</p>
-          </div>
-        </div>
-
+      {/* Logout */}
+      <div className="p-4 border-t border-slate-800">
         <button
-          onClick={handleLogout}
-          className="w-full flex items-center gap-3 p-3 text-red-400 hover:bg-red-400/10 rounded-xl font-bold transition-all"
+          onClick={logout}
+          className="flex items-center gap-3 px-4 py-3 w-full rounded-xl font-bold hover:bg-red-500/10 hover:text-red-500 transition-all text-slate-400"
         >
-          <LogOut size={20} /> Sair do Sistema
+          <LogOut size={20} />
+          Sair
         </button>
       </div>
     </aside>
