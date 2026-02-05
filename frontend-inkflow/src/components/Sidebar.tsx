@@ -9,17 +9,22 @@ interface SidebarProps {
 export function Sidebar({ onClose }: SidebarProps) {
   const location = useLocation();
   const { logout } = useAuth();
+  // Dentro da Sidebar.tsx, você pode separar por categorias se quiser crescer mais depois
   const menuItems = [
     {
       icon: <LayoutDashboard size={20} />,
-      label: "Dashboard",
+      label: "Visão Geral",
       path: "/admin/dashboard",
     },
-    { icon: <Store size={20} />, label: "Lojas", path: "/admin/lojas" },
+    {
+      icon: <Store size={20} />,
+      label: "Gestão de Unidades", // Nome mais profissional para "Lojas"
+      path: "/admin/lojas",
+    },
     {
       icon: <Settings size={20} />,
-      label: "Configurações",
-      path: "/admin/config",
+      label: "Plataforma",
+      path: "/admin/configuracoes",
     },
   ];
 

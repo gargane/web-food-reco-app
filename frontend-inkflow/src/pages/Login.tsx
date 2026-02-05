@@ -3,7 +3,7 @@ import { useAuth } from "../hooks/useAuth";
 import { authService, loginSchema } from "../services/auth/authService";
 import { useState, useEffect } from "react";
 import { Eye, EyeOff } from "lucide-react";
-
+import { toast } from "sonner";
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
@@ -69,9 +69,25 @@ export default function Login() {
       } else {
         navigate("/dashboard");
       }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       console.error("Erro no login:", err);
-      setError(err.response?.data || "E-mail ou senha incorretos.");
+
+      // 1. Tenta pegar a mensagem do Middleware (objeto) ou do Identity (string)
+      const apiResponse = err.response?.data;
+
+      let message = "E-mail ou senha incorretos.";
+
+      if (typeof apiResponse === "object" && apiResponse !== null) {
+        // Se for o nosso objeto de manutenção { message, maintenance }
+        message = apiResponse.message || "Sistema em manutenção.";
+      } else if (typeof apiResponse === "string") {
+        // Se for uma string simples vinda da API
+        message = apiResponse;
+      }
+
+      setError(message);
+      toast.error(message); // Recomendo usar o toast também para feedback visual
     } finally {
       setLoading(false);
     }

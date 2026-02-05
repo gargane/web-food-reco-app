@@ -3,7 +3,8 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth"; // Importe o hook
 import { tenantService } from "../services/tenants/tenantService";
-
+import adminConfigService from "../services/adminConfig/adminConfigService";
+import { toast } from "sonner";
 export default function SelectTenant() {
   const [slug, setSlug] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -15,25 +16,41 @@ export default function SelectTenant() {
   const { setTenantSlug } = useAuth();
 
   async function handleContinue(e: React.FormEvent) {
-    e.preventDefault();
+    e.preventDefault(); // Mova para a primeira linha
     setError(null);
+
     const cleanSlug = slug.trim().toLowerCase();
-
-    // LIMPEZA CRÍTICA: Se o usuário está trocando de loja,
-    // ele PRECISA ser deslogado para não bugar o redirecionamento
-    localStorage.removeItem("@InkFlow:token");
-    localStorage.removeItem("@InkFlow:user");
-
-    if (cleanSlug === "admin") {
-      setTenantSlug("admin");
-      // Usamos um pequeno truque: window.location força o refresh do AuthContext
-      window.location.href = "/login";
-      return;
-    }
+    if (!cleanSlug) return;
 
     setLoading(true);
+
     try {
+      // 1. SEMPRE permite que o slug "admin" passe, mesmo em manutenção
+      if (cleanSlug === "admin") {
+        localStorage.removeItem("@InkFlow:token");
+        localStorage.removeItem("@InkFlow:user");
+        setTenantSlug("admin");
+        window.location.href = "/login";
+        return;
+      }
+
+      // 2. Para outros slugs, verifica a manutenção
+      const config = await adminConfigService.getConfig();
+      if (config.isMaintenanceMode) {
+        toast.error(
+          config.maintenanceMessage || "O sistema está em manutenção.",
+        );
+        setLoading(false);
+        return;
+      }
+
+      // 3. Se não está em manutenção, valida o tenant normalmente
       await tenantService.verifySlug(cleanSlug);
+
+      // Limpeza apenas se for um tenant válido
+      localStorage.removeItem("@InkFlow:token");
+      localStorage.removeItem("@InkFlow:user");
+
       setTenantSlug(cleanSlug);
       window.location.href = "/login";
     } catch (err: any) {

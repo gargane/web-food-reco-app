@@ -42,4 +42,19 @@ export const tenantService = {
     const response = await api.post("/admin/tenants", data);
     return response.data;
   },
+
+  getStats: async () => {
+    const response = await api.get("/admin/tenants/stats");
+    return response.data;
+  },
+
+  impersonate: async (slug: string) => {
+    const response = await api.post(`/admin/tenants/impersonate/${slug}`);
+    return response.data;
+  },
+
+  async getDiagnostico(slug: string) {
+  const response = await api.get(`/admin/tenants/diagnostico/${slug}`);
+  return response.data;
+}
 };

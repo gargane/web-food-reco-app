@@ -24,7 +24,11 @@ export default function AdminDashboard() {
   const navigate = useNavigate();
   const [stores, setStores] = useState<StoreData[]>([]);
   const [loading, setLoading] = useState(true);
-
+  const [stats, setStats] = useState({
+    totalStores: 0,
+    totalActiveCustomers: 0,
+    totalRevenue: 0,
+  });
   // Estados para o Modal
 
   // 1. Estado expandido para incluir os dados do Dono
@@ -40,19 +44,27 @@ export default function AdminDashboard() {
   });
 
   useEffect(() => {
-    async function loadStores() {
+    async function loadDashboardData() {
       try {
-        const data = await tenantService.getAll();
-        setStores(data);
+        setLoading(true);
+
+        // Promise.all dispara as duas requisições ao mesmo tempo
+        const [storesData, statsData] = await Promise.all([
+          tenantService.getAll(),
+          tenantService.getStats(),
+        ]);
+
+        setStores(storesData);
+        setStats(statsData);
       } catch (err) {
-        console.error("Erro ao carregar lojas", err);
+        console.error("Erro ao carregar dados do dashboard", err);
       } finally {
         setLoading(false);
       }
     }
-    loadStores();
-  }, []);
 
+    loadDashboardData();
+  }, []);
   async function loadStores() {
     try {
       setLoading(true);
@@ -74,7 +86,6 @@ export default function AdminDashboard() {
 
     setIsCreating(true);
 
-    // Criamos uma "promessa" para o toast ficar com aquele loading bonito
     const promise = tenantService.create(newStore);
 
     toast.promise(promise, {
@@ -89,7 +100,11 @@ export default function AdminDashboard() {
           password: "",
           confirmPassword: "",
         });
-        loadStores();
+
+        // Chamamos a função que carrega a lista e as estatísticas novamente
+        // Isso garante que o card "Total de Lojas" suba o número na hora!
+        loadDashboardData();
+
         return "Loja e Dono criados com sucesso!";
       },
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -101,6 +116,28 @@ export default function AdminDashboard() {
       },
     });
   }
+
+  // 1. Defina a função fora do useEffect
+  async function loadDashboardData() {
+    try {
+      setLoading(true);
+      const [storesData, statsData] = await Promise.all([
+        tenantService.getAll(),
+        tenantService.getStats(),
+      ]);
+      setStores(storesData);
+      setStats(statsData);
+    } catch (err) {
+      console.error("Erro ao carregar dados", err);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // 2. Chame ela no carregamento inicial
+  useEffect(() => {
+    loadDashboardData();
+  }, []);
 
   return (
     <div className="space-y-6 md:space-y-8 p-4 md:p-6">
@@ -126,17 +163,20 @@ export default function AdminDashboard() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
         <StatCard
           title="Total de Lojas"
-          value={stores.length.toString()}
+          value={stats.totalStores.toString()} // Pega do novo endpoint
           icon={<Store className="text-indigo-600" />}
         />
         <StatCard
           title="Clientes Ativos"
-          value="1.240"
+          value={stats.totalActiveCustomers.toLocaleString("pt-BR")} // Ex: 1.240
           icon={<Users className="text-emerald-600" />}
         />
         <StatCard
           title="Faturamento Total"
-          value="R$ 12.450"
+          value={new Intl.NumberFormat("pt-BR", {
+            style: "currency",
+            currency: "BRL",
+          }).format(stats.totalRevenue)} // Ex: R$ 12.450,00
           icon={<DollarSign className="text-amber-600" />}
         />
       </div>
